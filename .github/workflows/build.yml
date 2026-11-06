@@ -1,0 +1,101 @@
+name: Build unsigned IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest stable Xcode
+        run: |
+          set -euo pipefail
+          XCODE=$(ls -d /Applications/Xcode_*.app \
+            | grep -E '/Xcode_[0-9]+(\.[0-9]+)*\.app$' \
+            | sed -E 's#^.*/Xcode_([0-9.]+)\.app$#\1 &#' \
+            | sort -V | tail -n 1 | cut -d' ' -f2)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i iphoneos
+
+      - name: Install XcodeGen and generate project
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build (signing disabled)
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project Rollcam.xcodeproj \
+            -scheme Rollcam \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            build > xcodebuild.log 2>&1 || {
+              echo "::group::Compiler errors"
+              grep -E 'error:' xcodebuild.log | sort -u || true
+              echo "::endgroup::"
+              tail -n 80 xcodebuild.log
+              exit 1
+            }
+          grep -E '\*\* BUILD' xcodebuild.log
+
+      - name: Package Rollcam.ipa
+        run: |
+          set -euo pipefail
+          APP=build/Build/Products/Release-iphoneos/Rollcam.app
+          test -d "$APP"
+          rm -rf Payload Rollcam.ipa
+          mkdir Payload
+          cp -R "$APP" Payload/
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload Rollcam.ipa
+          unzip -l Rollcam.ipa | head -n 20
+          ls -lh Rollcam.ipa
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log-${{ env.BUILD_NUMBER }}
+          path: xcodebuild.log
+          if-no-files-found: ignore
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rollcam-${{ env.BUILD_NUMBER }}
+          path: Rollcam.ipa
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="build-${BUILD_NUMBER}"
+          gh release create "$TAG" Rollcam.ipa \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Rollcam build ${BUILD_NUMBER}" \
+            --notes "Unsigned IPA built from ${GITHUB_SHA::7}. Sideload with Sideloadly or AltStore — see the README."
