@@ -271,7 +271,7 @@ struct CameraBodyView: View {
     }
 
     private func fire() {
-        guard let roll, !roll.isFull else { return }
+        guard let roll, !roll.isFull, !camera.isCapturing else { return }
         guard roll.isWound else {
             Haptics.warn()
             wheelNudge.toggle()
@@ -344,7 +344,6 @@ private struct FilmCounter: View {
 private struct ShutterButton: View {
     let armed: Bool
     let action: () -> Void
-    @State private var pressed = false
 
     var body: some View {
         Button(action: action) {
