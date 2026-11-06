@@ -52,8 +52,8 @@ struct CameraBodyView: View {
                 break
             }
         }
-        .sheet(isPresented: $showLoadFilm) { LoadFilmSheet().presentationDetents([.medium]) }
-        .sheet(isPresented: $showLab) { LabView() }
+        .sheet(isPresented: $showLoadFilm) { LoadFilmSheet().environmentObject(store).presentationDetents([.medium]) }
+        .sheet(isPresented: $showLab) { LabView().environmentObject(store) }
         .sheet(isPresented: $showSettings) { SettingsView() }
         .confirmationDialog("End this roll now?", isPresented: $confirmEndEarly, titleVisibility: .visible) {
             if let roll {

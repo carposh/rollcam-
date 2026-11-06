@@ -28,9 +28,7 @@ enum FilmLab {
         image = vignette(image, extent: extent)
         image = grain(image, extent: extent, rng: &rng).cropped(to: extent)
 
-        guard let cg = context.createCGImage(image, from: extent, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)) else {
-            return nil
-        }
+        guard let cg = context.createCGImage(image, from: extent) else { return nil }
         var output = UIImage(cgImage: cg)
         if options.dateStamp { output = stamp(output, date: options.capturedAt) }
         return output.jpegData(compressionQuality: 0.9)
