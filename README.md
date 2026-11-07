@@ -8,6 +8,36 @@ single photo until the roll comes back developed, with a warm, grainy, light-lea
 - No account, no server, no third-party code
 - Works with a **free** Apple ID (no special entitlements; it uses local notifications only)
 
+## Quickest: use it in Safari (no install)
+
+Rollcam also runs as a web app. You don't need to sideload or have a computer.
+
+**https://carposh.github.io/rollcam-/**
+
+1. Open the link in **Safari** on your iPhone.
+2. Tap **Share ▸ Add to Home Screen**. Do this rather than just bookmarking. Safari can delete
+   a website's stored data if you don't open the site for 7 days, and that would include your
+   rolls. Home Screen web apps are kept.
+3. Open Rollcam from the Home Screen icon and allow the camera.
+
+The web version works the same way: you shoot through the small viewfinder, wind the
+thumbwheel after each shot (iOS 18+ clicks with a haptic), choose 24 or 36 exposures, and send
+the roll to the lab. It applies the same film look, keeps undeveloped frames encrypted, and
+detects the clock being turned back. Browsers have a few limits:
+
+- **No notification when a roll is ready.** A website can't notify you while it's closed
+  unless it has a push server. Tap **Remind me** on a roll at the lab to add a calendar event
+  with an alert instead.
+- **Flash** uses the torch where the browser supports it. Otherwise it becomes a white screen
+  flash, which helps for selfies.
+- **Save to Photos** opens the share sheet. Choose **Save Images** there.
+- **Image quality** is limited to the camera's video resolution: prints are about 2400×1600.
+- **Clock checks:** turning the clock back is detected, but a browser can't detect the clock
+  being moved forward.
+
+The site is in `web/` and is published to the `gh-pages` branch by
+`.github/workflows/web.yml` on every push to `main` that changes it.
+
 ## 1. Download the IPA
 
 Every push to `main` is built by GitHub Actions on a Mac and published as an **unsigned IPA**.
